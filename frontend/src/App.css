@@ -69,6 +69,8 @@ body { overflow:hidden; }.app-shell { height:100vh; min-height:0; overflow:hidde
 
 .edit-button { padding:9px 11px; border-radius:5px; background:#f4e5d9; color:var(--ink); font-size:10px; font-weight:700; }
 .edit-button:disabled { cursor:not-allowed; opacity:.5; }
+.employee-remove-bar { display:flex !important; visibility:visible; z-index:20; }
+.edit-button { display:inline-flex !important; visibility:visible; }
 :root { --ink:#2a2421; --muted:#8b7b70; --line:rgba(180,140,100,.18); --mint:#f2c29f; --green:#94613f; --paper:#faf7f2; --cream:#fffdf9; }
 body { color:var(--ink); background:var(--paper); }
 .app-shell { background:radial-gradient(circle at 90% 0%,rgba(226,177,137,.26),transparent 30%),radial-gradient(circle at 10% 90%,rgba(205,164,111,.1),transparent 28%),var(--paper); }
