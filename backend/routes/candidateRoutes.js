@@ -88,4 +88,17 @@ router.post("/", (req, res) => {
     });
 });
 
+router.delete("/:id", (req, res) => {
+    db.query("DELETE FROM candidates WHERE id = ?", [req.params.id], (err, result) => {
+        if (err) {
+            return res.status(err.code === "ER_ROW_IS_REFERENCED_2" ? 409 : 500).json({
+                message: err.code === "ER_ROW_IS_REFERENCED_2" ? "Remove linked applications before deleting this candidate" : "Failed to delete candidate",
+                error: err.message
+            });
+        }
+        if (result.affectedRows === 0) return res.status(404).json({ message: "Candidate not found" });
+        res.json({ message: "Candidate deleted successfully" });
+    });
+});
+
 module.exports = router;

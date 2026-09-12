@@ -92,5 +92,15 @@ router.post("/", (req, res) => {
     });
 });
 
+router.delete("/:id", (req, res) => {
+    db.query("DELETE FROM applications WHERE id = ?", [req.params.id], (err, result) => {
+        if (err) {
+            return res.status(500).json({ message: "Failed to delete applicant", error: err.message });
+        }
+        if (result.affectedRows === 0) return res.status(404).json({ message: "Applicant not found" });
+        res.json({ message: "Applicant deleted successfully" });
+    });
+});
+
 
 module.exports = router;

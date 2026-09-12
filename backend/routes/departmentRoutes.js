@@ -126,5 +126,18 @@ router.post("/", (req, res) => {
 
 });
 
+router.delete("/:id", (req, res) => {
+    db.query("DELETE FROM departments WHERE id = ?", [req.params.id], (err, result) => {
+        if (err) {
+            return res.status(err.code === "ER_ROW_IS_REFERENCED_2" ? 409 : 500).json({
+                message: err.code === "ER_ROW_IS_REFERENCED_2" ? "Remove employees or jobs using this department first" : "Failed to delete department",
+                error: err.message
+            });
+        }
+        if (result.affectedRows === 0) return res.status(404).json({ message: "Department not found" });
+        res.json({ message: "Department deleted successfully" });
+    });
+});
+
 
 module.exports = router;
