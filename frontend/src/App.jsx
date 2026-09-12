@@ -45,6 +45,7 @@ function App() {
   const [isSaving, setIsSaving] = useState(false)
   const [selectedRecordId, setSelectedRecordId] = useState('')
   const [deletingRecordId, setDeletingRecordId] = useState(null)
+  const [editingRecord, setEditingRecord] = useState(null)
   const [formError, setFormError] = useState('')
   const [employeeForm, setEmployeeForm] = useState({ employee_code: '', first_name: '', last_name: '', email: '', phone: '', gender: '', department_id: '', designation_id: '', joining_date: '', salary: '', employment_status: 'active', address: '' })
   const [candidateForm, setCandidateForm] = useState({ first_name: '', last_name: '', email: '', phone: '', resume_url: '', skills: '', experience_years: '', education: '', address: '' })
@@ -86,18 +87,43 @@ function App() {
     setFormError('')
     setIsSaving(true)
     try {
-      const response = await fetch(`${API_URL}/employees`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...employeeForm, department_id: employeeForm.department_id ? Number(employeeForm.department_id) : null, designation_id: employeeForm.designation_id ? Number(employeeForm.designation_id) : null, salary: employeeForm.salary ? Number(employeeForm.salary) : null, employment_status: employeeForm.employment_status }) })
+      const response = await fetch(`${API_URL}/employees${editingRecord ? `/${editingRecord.id}` : ''}`, { method: editingRecord ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...employeeForm, department_id: employeeForm.department_id ? Number(employeeForm.department_id) : null, designation_id: employeeForm.designation_id ? Number(employeeForm.designation_id) : null, salary: employeeForm.salary ? Number(employeeForm.salary) : null, employment_status: employeeForm.employment_status }) })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || result.message || 'Unable to add employee')
       const refreshedEmployees = await getData('/employees', employees)
       setEmployees(Array.isArray(refreshedEmployees) ? refreshedEmployees : employees)
       setIsEmployeeModalOpen(false)
       setIsEmployeeFormOpen(false)
+      setEditingRecord(null)
       setEmployeeForm({ employee_code: '', first_name: '', last_name: '', email: '', phone: '', gender: '', department_id: '', designation_id: '', joining_date: '', salary: '', employment_status: 'active', address: '' })
     } catch (error) {
       setFormError(error.message)
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  function editSelectedRecord() {
+    const collections = { Employees: employees, Candidates: candidates, Applicants: applications, Jobs: jobs, Departments: departments, Designations: designations }
+    const record = (collections[activeView] || []).find((item) => String(item.id) === selectedRecordId)
+    if (!record) return
+    setEditingRecord(record)
+    setFormError('')
+    if (activeView === 'Employees') {
+      setEmployeeForm({ ...employeeForm, ...record, department_id: record.department_id || '', designation_id: record.designation_id || '', joining_date: record.joining_date ? String(record.joining_date).slice(0, 10) : '', salary: record.salary || '' })
+      setIsEmployeeFormOpen(true)
+    } else if (activeView === 'Candidates') {
+      setCandidateForm({ ...candidateForm, ...record })
+      setIsCandidateModalOpen(true)
+    } else if (activeView === 'Jobs') {
+      setJobForm({ ...jobForm, ...record })
+      setIsJobModalOpen(true)
+    } else if (activeView === 'Applicants') {
+      setApplicationForm({ candidate_id: record.candidate_id, job_id: record.job_id, status: record.status, notes: record.notes || '' })
+      setIsApplicationModalOpen(true)
+    } else {
+      setMasterForm({ name: record.name, description: record.description || '' })
+      setMasterModal(activeView.toLowerCase())
     }
   }
 
@@ -141,12 +167,14 @@ function App() {
       payload.salary_max = form.salary_max ? Number(form.salary_max) : null
     }
     try {
-      const response = await fetch(`${API_URL}/${isCandidate ? 'candidates' : 'jobs'}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      const collection = isCandidate ? 'candidates' : 'jobs'
+      const response = await fetch(`${API_URL}/${collection}${editingRecord ? `/${editingRecord.id}` : ''}`, { method: editingRecord ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || result.message || `Unable to add ${type}`)
       const refreshed = await getData(`/${isCandidate ? 'candidates' : 'jobs'}`, [])
       if (isCandidate) { setCandidates(Array.isArray(refreshed) ? refreshed : candidates); setIsCandidateModalOpen(false); setCandidateForm({ first_name: '', last_name: '', email: '', phone: '', resume_url: '', skills: '', experience_years: '', education: '', address: '' }) }
       else { setJobs(Array.isArray(refreshed) ? refreshed : jobs); setIsJobModalOpen(false); setJobForm({ job_title: '', description: '', requirements: '', salary_min: '', salary_max: '', location: '', employment_type: 'Full-time', closing_date: '' }) }
+      setEditingRecord(null)
     } catch (error) { setFormError(error.message) } finally { setIsSaving(false) }
   }
 
@@ -155,13 +183,14 @@ function App() {
     setFormError('')
     setIsSaving(true)
     try {
-      const response = await fetch(`${API_URL}/${masterModal}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(masterForm) })
+      const response = await fetch(`${API_URL}/${masterModal}${editingRecord ? `/${editingRecord.id}` : ''}`, { method: editingRecord ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(masterForm) })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || result.message || `Unable to add ${masterModal.slice(0, -1)}`)
       const refreshed = await getData(`/${masterModal}`, [])
       if (masterModal === 'departments') setDepartments(Array.isArray(refreshed) ? refreshed : departments)
       else setDesignations(Array.isArray(refreshed) ? refreshed : designations)
       setMasterModal('')
+      setEditingRecord(null)
     } catch (error) { setFormError(error.message) } finally { setIsSaving(false) }
   }
 
@@ -170,13 +199,14 @@ function App() {
     setFormError('')
     setIsSaving(true)
     try {
-      const response = await fetch(`${API_URL}/applications`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...applicationForm, candidate_id: Number(applicationForm.candidate_id), job_id: Number(applicationForm.job_id) }) })
+      const response = await fetch(`${API_URL}/applications${editingRecord ? `/${editingRecord.id}` : ''}`, { method: editingRecord ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...applicationForm, candidate_id: Number(applicationForm.candidate_id), job_id: Number(applicationForm.job_id) }) })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || result.message || 'Unable to add applicant')
       const refreshed = await getData('/applications', applications)
       setApplications(Array.isArray(refreshed) ? refreshed : applications)
       setIsApplicationModalOpen(false)
       setApplicationForm({ candidate_id: '', job_id: '', status: 'applied', notes: '' })
+      setEditingRecord(null)
     } catch (error) { setFormError(error.message) } finally { setIsSaving(false) }
   }
 
@@ -228,7 +258,7 @@ function App() {
         </div>
       </main>
       {isEmployeeFormOpen && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setIsEmployeeFormOpen(false)}><form className="modal" onSubmit={saveEmployee}><div className="modal-heading"><div><p className="eyebrow">NEW RECORD</p><h2>Add employee</h2></div><button type="button" className="close-button" onClick={() => setIsEmployeeFormOpen(false)} aria-label="Close"><X size={18} /></button></div><div className="form-grid"><label>Employee code<input name="employee_code" value={employeeForm.employee_code} onChange={updateEmployeeForm} placeholder="EMP-025" required /></label><label>First name<input name="first_name" value={employeeForm.first_name} onChange={updateEmployeeForm} placeholder="First name" required /></label><label>Last name<input name="last_name" value={employeeForm.last_name} onChange={updateEmployeeForm} placeholder="Last name" required /></label><label>Email<input type="email" name="email" value={employeeForm.email} onChange={updateEmployeeForm} placeholder="name@company.com" required /></label><label>Department<select name="department_id" value={employeeForm.department_id} onChange={updateEmployeeForm}><option value="">Select department</option>{departments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}</select></label><label>Designation<select name="designation_id" value={employeeForm.designation_id} onChange={updateEmployeeForm}><option value="">Select designation</option>{designations.map((designation) => <option key={designation.id} value={designation.id}>{designation.name}</option>)}</select></label><label>Phone<input name="phone" value={employeeForm.phone} onChange={updateEmployeeForm} placeholder="Phone number" /></label><label>Status<select name="employment_status" value={employeeForm.employment_status} onChange={updateEmployeeForm}><option value="active">Active</option><option value="inactive">Inactive</option></select></label><label>Joining date<input type="date" name="joining_date" value={employeeForm.joining_date} onChange={updateEmployeeForm} required /></label><label>Salary<input type="number" name="salary" value={employeeForm.salary} onChange={updateEmployeeForm} placeholder="Annual salary" min="0" /></label><label className="full-field">Address<textarea name="address" value={employeeForm.address} onChange={updateEmployeeForm} placeholder="Home address" rows="3" /></label></div>{formError && <p className="form-error">{formError}</p>}<div className="modal-actions"><button type="button" className="cancel-button" onClick={() => setIsEmployeeFormOpen(false)}>Cancel</button><button type="submit" className="primary-button" disabled={isSaving}>{isSaving ? 'Saving...' : 'Save employee'}</button></div></form></div>}
-      {activeView !== 'Overview' && <div className="employee-remove-bar"><span className="after-status-label">Remove {activeView.slice(0, -1).toLowerCase()}</span><select value={selectedRecordId} onChange={(event) => setSelectedRecordId(event.target.value)}><option value="">Select record</option>{(activeView === 'Employees' ? employees : activeView === 'Candidates' ? candidates : activeView === 'Applicants' ? applications : activeView === 'Jobs' ? jobs : activeView === 'Departments' ? departments : designations).map((record) => <option key={record.id} value={record.id}>{record.employee_code ? `${record.employee_code} - ${record.first_name} ${record.last_name || ''}` : record.candidate_name ? `${record.candidate_name}${record.job_title ? ` - ${record.job_title}` : ''}` : record.first_name ? `${record.first_name} ${record.last_name || ''}` : record.job_title || record.name || `Application #${record.id}`}</option>)}</select><button className="remove-button" onClick={removeRecord} disabled={!selectedRecordId || deletingRecordId}>Remove</button></div>}
+      {activeView !== 'Overview' && <div className="employee-remove-bar"><span className="after-status-label">Manage {activeView.slice(0, -1).toLowerCase()}</span><select value={selectedRecordId} onChange={(event) => setSelectedRecordId(event.target.value)}><option value="">Select record</option>{(activeView === 'Employees' ? employees : activeView === 'Candidates' ? candidates : activeView === 'Applicants' ? applications : activeView === 'Jobs' ? jobs : activeView === 'Departments' ? departments : designations).map((record) => <option key={record.id} value={record.id}>{record.employee_code ? `${record.employee_code} - ${record.first_name} ${record.last_name || ''}` : record.candidate_name ? `${record.candidate_name}${record.job_title ? ` - ${record.job_title}` : ''}` : record.first_name ? `${record.first_name} ${record.last_name || ''}` : record.job_title || record.name || `Application #${record.id}`}</option>)}</select><button className="edit-button" onClick={editSelectedRecord} disabled={!selectedRecordId}>Edit</button><button className="remove-button" onClick={removeRecord} disabled={!selectedRecordId || deletingRecordId}>Remove</button></div>}
       {activeView === 'Employees' && <div className="employee-meta-bar"><strong>New employee details</strong><select name="department_id" value={employeeForm.department_id} onChange={updateEmployeeForm}><option value="">Department</option>{departments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}</select><select name="designation_id" value={employeeForm.designation_id} onChange={updateEmployeeForm}><option value="">Designation</option>{designations.map((designation) => <option key={designation.id} value={designation.id}>{designation.name}</option>)}</select><select name="employment_status" value={employeeForm.employment_status} onChange={updateEmployeeForm}><option value="active">Active</option><option value="inactive">Inactive</option></select></div>}
       {isEmployeeModalOpen && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setIsEmployeeModalOpen(false)}><form className="modal" onSubmit={saveEmployee}><div className="modal-heading"><div><p className="eyebrow">NEW RECORD</p><h2>Add employee</h2></div><button type="button" className="close-button" onClick={() => setIsEmployeeModalOpen(false)} aria-label="Close">×</button></div><div className="form-grid"><label>Employee code<input name="employee_code" value={employeeForm.employee_code} onChange={updateEmployeeForm} placeholder="EMP-025" required /></label><label>First name<input name="first_name" value={employeeForm.first_name} onChange={updateEmployeeForm} placeholder="First name" required /></label><label>Last name<input name="last_name" value={employeeForm.last_name} onChange={updateEmployeeForm} placeholder="Last name" required /></label><label>Email<input type="email" name="email" value={employeeForm.email} onChange={updateEmployeeForm} placeholder="name@company.com" required /></label><label>Phone<input name="phone" value={employeeForm.phone} onChange={updateEmployeeForm} placeholder="Phone number" /></label><label>Gender<select name="gender" value={employeeForm.gender} onChange={updateEmployeeForm}><option value="">Select gender</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select></label><label>Joining date<input type="date" name="joining_date" value={employeeForm.joining_date} onChange={updateEmployeeForm} required /></label><label>Salary<input type="number" name="salary" value={employeeForm.salary} onChange={updateEmployeeForm} placeholder="Annual salary" min="0" /></label><label className="full-field">Address<textarea name="address" value={employeeForm.address} onChange={updateEmployeeForm} placeholder="Home address" rows="3" /></label></div>{formError && <p className="form-error">{formError}</p>}<div className="modal-actions"><button type="button" className="cancel-button" onClick={() => setIsEmployeeModalOpen(false)}>Cancel</button><button type="submit" className="primary-button" disabled={isSaving}>{isSaving ? 'Saving...' : 'Save employee'}</button></div></form></div>}
       {isCandidateModalOpen && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setIsCandidateModalOpen(false)}><form className="modal" onSubmit={(event) => saveRecord(event, 'candidate')}><div className="modal-heading"><div><p className="eyebrow">NEW RECORD</p><h2>Add candidate</h2></div><button type="button" className="close-button" onClick={() => setIsCandidateModalOpen(false)} aria-label="Close">×</button></div><div className="form-grid"><label>First name<input name="first_name" value={candidateForm.first_name} onChange={(event) => setCandidateForm({ ...candidateForm, first_name: event.target.value })} required /></label><label>Last name<input name="last_name" value={candidateForm.last_name} onChange={(event) => setCandidateForm({ ...candidateForm, last_name: event.target.value })} required /></label><label>Email<input type="email" name="email" value={candidateForm.email} onChange={(event) => setCandidateForm({ ...candidateForm, email: event.target.value })} required /></label><label>Phone<input name="phone" value={candidateForm.phone} onChange={(event) => setCandidateForm({ ...candidateForm, phone: event.target.value })} /></label><label>Skills<input name="skills" value={candidateForm.skills} onChange={(event) => setCandidateForm({ ...candidateForm, skills: event.target.value })} placeholder="React, SQL, leadership" /></label><label>Experience years<input type="number" name="experience_years" min="0" value={candidateForm.experience_years} onChange={(event) => setCandidateForm({ ...candidateForm, experience_years: event.target.value })} /></label><label>Education<input name="education" value={candidateForm.education} onChange={(event) => setCandidateForm({ ...candidateForm, education: event.target.value })} /></label><label>Resume URL<input type="url" name="resume_url" value={candidateForm.resume_url} onChange={(event) => setCandidateForm({ ...candidateForm, resume_url: event.target.value })} /></label><label className="full-field">Address<textarea name="address" rows="3" value={candidateForm.address} onChange={(event) => setCandidateForm({ ...candidateForm, address: event.target.value })} /></label></div>{formError && <p className="form-error">{formError}</p>}<div className="modal-actions"><button type="button" className="cancel-button" onClick={() => setIsCandidateModalOpen(false)}>Cancel</button><button type="submit" className="primary-button" disabled={isSaving}>{isSaving ? 'Saving...' : 'Save candidate'}</button></div></form></div>}

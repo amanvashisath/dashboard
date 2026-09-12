@@ -135,5 +135,13 @@ router.delete("/:id", (req, res) => {
     });
 });
 
+router.put("/:id", (req, res) => {
+    db.query("UPDATE designations SET name = ?, description = ? WHERE id = ?", [req.body.name, req.body.description || null, req.params.id], (err, result) => {
+        if (err) return res.status(500).json({ message: "Failed to update designation", error: err.message });
+        if (result.affectedRows === 0) return res.status(404).json({ message: "Designation not found" });
+        res.json({ message: "Designation updated successfully" });
+    });
+});
+
 
 module.exports = router;

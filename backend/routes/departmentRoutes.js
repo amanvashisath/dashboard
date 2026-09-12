@@ -139,5 +139,13 @@ router.delete("/:id", (req, res) => {
     });
 });
 
+router.put("/:id", (req, res) => {
+    db.query("UPDATE departments SET name = ?, description = ? WHERE id = ?", [req.body.name, req.body.description || null, req.params.id], (err, result) => {
+        if (err) return res.status(500).json({ message: "Failed to update department", error: err.message });
+        if (result.affectedRows === 0) return res.status(404).json({ message: "Department not found" });
+        res.json({ message: "Department updated successfully" });
+    });
+});
+
 
 module.exports = router;

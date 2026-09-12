@@ -102,5 +102,14 @@ router.delete("/:id", (req, res) => {
     });
 });
 
+router.put("/:id", (req, res) => {
+    const { candidate_id, job_id, status, notes } = req.body;
+    db.query("UPDATE applications SET candidate_id = ?, job_id = ?, status = ?, notes = ? WHERE id = ?", [candidate_id, job_id, status, notes, req.params.id], (err, result) => {
+        if (err) return res.status(500).json({ message: "Failed to update applicant", error: err.message });
+        if (result.affectedRows === 0) return res.status(404).json({ message: "Applicant not found" });
+        res.json({ message: "Applicant updated successfully" });
+    });
+});
+
 
 module.exports = router;
