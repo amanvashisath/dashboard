@@ -93,12 +93,14 @@ router.post("/", (req, res) => {
 });
 
 router.delete("/:id", (req, res) => {
-    db.query("DELETE FROM applications WHERE id = ?", [req.params.id], (err, result) => {
-        if (err) {
-            return res.status(500).json({ message: "Failed to delete applicant", error: err.message });
-        }
-        if (result.affectedRows === 0) return res.status(404).json({ message: "Applicant not found" });
-        res.json({ message: "Applicant deleted successfully" });
+    const applicationId = req.params.id;
+    db.query("DELETE FROM interviews WHERE application_id = ?", [applicationId], (interviewError) => {
+        if (interviewError) return res.status(500).json({ message: "Failed to delete applicant interviews", error: interviewError.message });
+        db.query("DELETE FROM applications WHERE id = ?", [applicationId], (err, result) => {
+            if (err) return res.status(500).json({ message: "Failed to delete applicant", error: err.message });
+            if (result.affectedRows === 0) return res.status(404).json({ message: "Applicant not found" });
+            res.json({ message: "Applicant and linked interviews deleted successfully" });
+        });
     });
 });
 

@@ -98,15 +98,17 @@ router.post("/", (req, res) => {
 });
 
 router.delete("/:id", (req, res) => {
-    db.query("DELETE FROM jobs WHERE id = ?", [req.params.id], (err, result) => {
-        if (err) {
-            return res.status(err.code === "ER_ROW_IS_REFERENCED_2" ? 409 : 500).json({
-                message: err.code === "ER_ROW_IS_REFERENCED_2" ? "Remove linked applications before deleting this job" : "Failed to delete job",
-                error: err.message
+    const jobId = req.params.id;
+    db.query("DELETE FROM interviews WHERE application_id IN (SELECT id FROM applications WHERE job_id = ?)", [jobId], (interviewError) => {
+        if (interviewError) return res.status(500).json({ message: "Failed to delete job interviews", error: interviewError.message });
+        db.query("DELETE FROM applications WHERE job_id = ?", [jobId], (applicationError) => {
+            if (applicationError) return res.status(500).json({ message: "Failed to delete job applications", error: applicationError.message });
+            db.query("DELETE FROM jobs WHERE id = ?", [jobId], (err, result) => {
+                if (err) return res.status(500).json({ message: "Failed to delete job", error: err.message });
+                if (result.affectedRows === 0) return res.status(404).json({ message: "Job not found" });
+                res.json({ message: "Job and linked records deleted successfully" });
             });
-        }
-        if (result.affectedRows === 0) return res.status(404).json({ message: "Job not found" });
-        res.json({ message: "Job deleted successfully" });
+        });
     });
 });
 
