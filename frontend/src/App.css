@@ -47,6 +47,25 @@ body { overflow:hidden; }.app-shell { height:100vh; min-height:0; overflow:hidde
 @media (max-width:600px) { .topbar { height:64px; gap:8px; }.top-nav-item { padding:23px 5px 19px; font-size:9px; }.top-actions { gap:7px; }.global-search { width:100px; }.top-logout { padding:8px; font-size:0; }.top-logout svg { margin:0; }.content-wrap { height:calc(100vh - 64px); padding:25px 4% 20px; }.table-wrap { max-height:calc(100vh - 270px); }.employee-remove-bar { right:10px; bottom:10px; max-width:calc(100% - 20px); }.employee-remove-bar select { max-width:145px; } }
 .home-summary { grid-template-columns:1.35fr 1fr; }
 @media (max-width:900px) { .home-summary { grid-template-columns:1fr; } }
+
+@media (max-width:600px) {
+	html, body, #root { height:auto; min-height:100%; overflow:auto; }
+	.app-shell { height:auto; min-height:100vh; overflow:visible; }
+	.sidebar { position:fixed; inset:0 auto 0 0; z-index:4; }
+	.main-content { min-width:0; height:auto; overflow:visible; margin-left:72px; }
+	.topbar { height:auto; min-height:64px; flex-wrap:wrap; padding:0 4%; gap:8px; }
+	.back-button { order:1; margin-right:0; }
+	.top-actions { order:2; flex:1; justify-content:flex-end; min-width:0; }
+	.top-navigation { order:3; flex-basis:100%; min-width:0; overflow-x:auto; justify-content:flex-start; border-top:1px solid var(--line); }
+	.top-nav-item { padding:14px 8px 12px; }
+	.content-wrap { height:auto; min-height:calc(100vh - 120px); overflow:visible; padding:28px 5% 90px; }
+	.table-wrap { max-height:none; overflow-x:auto; }
+	.records-panel { min-height:0; }
+	.records-panel .panel-heading { width:100%; }
+	.records-panel .panel-heading .primary-button { width:100%; }
+	.employee-remove-bar { position:fixed; right:10px; left:82px; bottom:10px; max-width:none; justify-content:space-between; }
+	.employee-remove-bar select { flex:1; max-width:none; min-width:0; }
+}
 :root { --ink:#2a2421; --muted:#8b7b70; --line:rgba(180,140,100,.18); --mint:#f2c29f; --green:#94613f; --paper:#faf7f2; --cream:#fffdf9; }
 body { color:var(--ink); background:var(--paper); }
 .app-shell { background:radial-gradient(circle at 90% 0%,rgba(226,177,137,.26),transparent 30%),radial-gradient(circle at 10% 90%,rgba(205,164,111,.1),transparent 28%),var(--paper); }
