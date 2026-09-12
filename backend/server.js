@@ -5,7 +5,7 @@ const db = require("./config/db");
 const cors = require("cors");
 
 // Routes
-const applicationRoutes = require("./routes/applicationRoutes");
+const applicationRoutes = require("./routes/applicationroutes");
 const employeeRoutes = require("./routes/employeeRoutes");
 const departmentRoutes = require("./routes/departmentRoutes");
 const designationRoutes = require("./routes/designationRoutes");
